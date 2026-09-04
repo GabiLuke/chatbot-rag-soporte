@@ -2,7 +2,7 @@
 
 import streamlit as st
 
-from rag import construir_indice, responder
+from rag import construir_indice, es_error_transitorio, responder
 
 st.set_page_config(page_title="Soporte TechShop", page_icon="🛒", layout="centered")
 
@@ -44,7 +44,13 @@ if pregunta := st.chat_input("¿En qué puedo ayudarte?"):
             try:
                 respuesta, fuentes = responder(col, pregunta)
             except Exception as e:
-                respuesta, fuentes = f"Ha ocurrido un error: {e}", []
+                fuentes = []
+                if es_error_transitorio(e):
+                    respuesta = ("⚠️ El asistente está saturado en este momento "
+                                 "(mucha demanda en el servidor). Inténtalo de nuevo "
+                                 "en unos segundos.")
+                else:
+                    respuesta = f"Ha ocurrido un error: {e}"
         st.markdown(respuesta)
         if fuentes:
             st.caption("📎 Fuentes: " + ", ".join(fuentes))

@@ -11,6 +11,7 @@ en tu cuenta), para que el proyecto no se rompa si cambia el catálogo.
 
 import glob
 import os
+import time
 from pathlib import Path
 
 import chromadb
@@ -59,6 +60,31 @@ def cliente():
             )
         _cliente = genai.Client(api_key=clave)
     return _cliente
+
+
+# --------------------------------------------------------------------------
+# Reintentos ante errores transitorios de la API (503 saturación, 429 cuota…)
+# --------------------------------------------------------------------------
+_TRANSITORIOS = ("503", "unavailable", "429", "resource_exhausted", "overloaded",
+                 "deadline", "timeout", "internal")
+
+
+def es_error_transitorio(e):
+    return any(t in str(e).lower() for t in _TRANSITORIOS)
+
+
+def _con_reintentos(fn, intentos=4, espera_base=1.0):
+    ultimo = None
+    for intento in range(intentos):
+        try:
+            return fn()
+        except Exception as e:
+            ultimo = e
+            if intento < intentos - 1 and es_error_transitorio(e):
+                time.sleep(espera_base * (2 ** intento))  # 1s, 2s, 4s…
+                continue
+            raise
+    raise ultimo
 
 
 # --------------------------------------------------------------------------
@@ -125,7 +151,9 @@ def cargar_y_trocear(carpeta=DOCS_DIR, tam=600, solape=100):
 # 2) Embeddings + índice vectorial (Chroma)
 # --------------------------------------------------------------------------
 def _embed(texto):
-    r = cliente().models.embed_content(model=modelo_embeddings(), contents=texto)
+    r = _con_reintentos(
+        lambda: cliente().models.embed_content(model=modelo_embeddings(), contents=texto)
+    )
     return r.embeddings[0].values
 
 
@@ -166,5 +194,7 @@ def responder(col, pregunta, k=4):
     docs, fuentes = recuperar(col, pregunta, k)
     contexto = "\n\n".join(f"[{f}] {d}" for d, f in zip(docs, fuentes))
     prompt = f"{SYSTEM}\n\nCONTEXTO:\n{contexto}\n\nPREGUNTA DEL CLIENTE: {pregunta}"
-    r = cliente().models.generate_content(model=modelo_generacion(), contents=prompt)
+    r = _con_reintentos(
+        lambda: cliente().models.generate_content(model=modelo_generacion(), contents=prompt)
+    )
     return r.text, sorted(set(fuentes))
