@@ -7,7 +7,7 @@ Chatbot de soporte para una tienda online que responde **únicamente con la info
 ![Google Gemini](https://img.shields.io/badge/Google_Gemini-8E75B2?style=flat&logo=googlegemini&logoColor=white)
 ![ChromaDB](https://img.shields.io/badge/ChromaDB-FCA121?style=flat)
 
-> 🔗 **Demo en vivo:** _pendiente de desplegar_
+> 🔗 **Demo en vivo:** **[chatbot-rag-soporte-gabiluke.streamlit.app](https://chatbot-rag-soporte-gabiluke.streamlit.app)**
 
 ---
 
