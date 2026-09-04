@@ -1,0 +1,14 @@
+# Entorno virtual
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.pyc
+
+# Secretos — ¡NUNCA subir!
+.env
+.streamlit/secrets.toml
+
+# Base vectorial local (si la persistes en disco)
+chroma_db/
